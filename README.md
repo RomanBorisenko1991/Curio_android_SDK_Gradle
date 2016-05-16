@@ -1,11 +1,11 @@
-Curio Android SDK 1.1.4
+Curio Android SDK 1.1.5
 ===============
 [![](https://jitpack.io/v/Turkcell/Curio_android_SDK_Gradle.svg)](https://jitpack.io/#Turkcell/Curio_android_SDK_Gradle)
 
 [Curio](https://gui-curio.turkcell.com.tr) is Turkcell's mobile analytics system, and this is Curio's Android Client SDK library. Applications developed for ***Android 2.3.3 Gingerbread (API Level 10) and higher*** can easily use Curio mobile analytics with this library.
 
 #What's New
-User tagging feature added.
+Thread model changed, target SDK updated.
 
 #Quick Startup Guide
 
