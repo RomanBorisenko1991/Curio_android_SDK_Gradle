@@ -22,7 +22,7 @@ import java.util.Map;
 import com.turkcell.curio.ICurioResultListener;
 
 /**
- * Holder class for online request structure.
+ * Model class for online request structure.
  * 
  * @author Can Ciloglu
  *

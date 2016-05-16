@@ -45,7 +45,7 @@ import com.turkcell.curio.utils.CurioDBContract.CurioPeriodicDispatchEntry;
  * 
  */
 public class CurioDBHelper extends SQLiteOpenHelper {
-	private static final String TAG = "CurioDBHelper";
+	private static final String TAG = CurioDBHelper.class.getSimpleName();
 
 	private static final String TEXT_TYPE = " TEXT";
 	private static final String INTEGER_TYPE = " INTEGER";
@@ -67,7 +67,7 @@ public class CurioDBHelper extends SQLiteOpenHelper {
 	private static CurioDBHelper instance;
 
 	/**
-	 * Using atomic integer for concurrency!!!
+	 * Using atomic integer for concurrency
 	 */
 	private AtomicInteger openDBCount = new AtomicInteger();
 
@@ -394,7 +394,7 @@ public class CurioDBHelper extends SQLiteOpenHelper {
 
 			int i = db.update(tableName, values, whereClause, whereArgs);
 
-			CurioLogger.d(TAG, i + " rows updated as in process until they sent...");
+			CurioLogger.d(TAG, i + " rows updated as in process until they're sent...");
 
 			db.setTransactionSuccessful();
 		} catch (Exception e1) {
@@ -582,7 +582,6 @@ public class CurioDBHelper extends SQLiteOpenHelper {
 	/**
 	 * Efficient way of getting row count.
 	 * 
-	 * @param tableName
 	 * @return
 	 */
 	private int getRowCount() {

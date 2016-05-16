@@ -41,6 +41,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
@@ -68,7 +69,7 @@ import com.turkcell.curio.utils.VisitorCodeManager;
  */
 @SuppressLint("FieldGetter")
 public class CurioClient implements INetworkConnectivityChangeListener {
-    private static final String TAG = "CurioClient";
+    private static final String TAG = CurioClient.class.getSimpleName();
     private static boolean getParamsFromResource = true;
     public static CurioClient instance = null;
 
@@ -141,11 +142,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
      * @return
      */
     public static synchronized CurioClient getInstance(Context context) {
-        if (instance == null) {
-            createInstance(context);
-        }
-
-        return instance;
+        return getInstance(context, true);
     }
 
     /**
@@ -163,23 +160,47 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             createInstance(context);
         }
 
+        if(instance.isReqProcessorThreadStopped()){
+            Log.d(TAG, "Main request thread stopped, restarting it...");
+            instance.startMainRequestProcessorThread();
+        }
+
+        if(instance.isDBProcessorThreadStopped()){
+            Log.d(TAG, "DB request thread stopped, restarting it...");
+            instance.startDBRequestProcessorThread();
+        }
+
         return instance;
+    }
+
+    private boolean isDBProcessorThreadStopped() {
+        return dbRequestProcessor.isFinished;
+    }
+
+    private boolean isReqProcessorThreadStopped() {
+        return curioRequestProcessor.isFinished;
     }
 
     /**
      * Starts main request processor thread.
      */
-    private void startMainRequestProcessorThread() {
-        curioRequestProcessor = new CurioRequestProcessor(this);
-        new Thread(curioRequestProcessor, Constants.THREAD_NAME_CURIO_REQ_PROC).start();
+    private synchronized void startMainRequestProcessorThread() {
+        if(CurioRequestProcessor.isFinished){
+            curioRequestProcessor = new CurioRequestProcessor(this);
+            new Thread(curioRequestProcessor, Constants.THREAD_NAME_CURIO_REQ_PROC).start();
+            CurioRequestProcessor.isFinished = false;
+        }
     }
 
     /**
      * Starts DB request processor thread.
      */
-    private void startDBRequestProcessorThread() {
-        dbRequestProcessor = new DBRequestProcessor();
-        new Thread(dbRequestProcessor, Constants.THREAD_NAME_DB_REQ_PROC).start();
+    private synchronized void startDBRequestProcessorThread() {
+        if(DBRequestProcessor.isFinished){
+            dbRequestProcessor = new DBRequestProcessor();
+            new Thread(dbRequestProcessor, Constants.THREAD_NAME_DB_REQ_PROC).start();
+            DBRequestProcessor.isFinished = false;
+        }
     }
 
     /**
@@ -212,86 +233,92 @@ public class CurioClient implements INetworkConnectivityChangeListener {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String visitorCode = null;
+                try {
+                    String visitorCode = null;
 
-                String apiKey = null;
-                String trackingCode = null;
-                int sessionTimeout = 0;
-                boolean autoPushRegistration = false;
-                String gcmSenderId = null;
+                    String apiKey = null;
+                    String trackingCode = null;
+                    int sessionTimeout = 0;
+                    boolean autoPushRegistration = false;
+                    String gcmSenderId = null;
 
-                if (getParamsFromResource) {
-                    apiKey = CurioClientSettings.getInstance(context).getApiKey();
-                    trackingCode = CurioClientSettings.getInstance(context).getTrackingCode();
-                    sessionTimeout = CurioClientSettings.getInstance(context).getSessionTimeout();
-                    gcmSenderId = CurioClientSettings.getInstance(context).getGcmSenderId();
-                    autoPushRegistration = CurioClientSettings.getInstance(context).isAutoPushRegistration();
-                    setServerUrl(CurioClientSettings.getInstance(context).getServerUrl());
-                    isPeriodicDispatchEnabled = CurioClientSettings.getInstance(context).isPeriodicDispatchEnabled();
+                    if (getParamsFromResource) {
+                        apiKey = CurioClientSettings.getInstance(context).getApiKey();
+                        trackingCode = CurioClientSettings.getInstance(context).getTrackingCode();
+                        sessionTimeout = CurioClientSettings.getInstance(context).getSessionTimeout();
+                        gcmSenderId = CurioClientSettings.getInstance(context).getGcmSenderId();
+                        autoPushRegistration = CurioClientSettings.getInstance(context).isAutoPushRegistration();
+                        setServerUrl(CurioClientSettings.getInstance(context).getServerUrl());
+                        isPeriodicDispatchEnabled = CurioClientSettings.getInstance(context).isPeriodicDispatchEnabled();
 
-                    if (isPeriodicDispatchEnabled) {
-                        dispatchPeriod = CurioClientSettings.getInstance(context).getDispatchPeriod();
+                        if (isPeriodicDispatchEnabled) {
+                            dispatchPeriod = CurioClientSettings.getInstance(context).getDispatchPeriod();
 
-                        if (dispatchPeriod >= sessionTimeout) {
-                            CurioLogger.w(TAG, "Dispatch period cannot be greater or equal to session timeout.");
-                            dispatchPeriod = sessionTimeout - 1;
-                            CurioClientSettings.getInstance(context).setDispatchPeriod(dispatchPeriod);
-                            CurioLogger.i(TAG, "Periodic dispatch is ENABLED.");
-                            CurioLogger.i(TAG, "Dispatch period is " + dispatchPeriod + " minutes");
+                            if (dispatchPeriod >= sessionTimeout) {
+                                CurioLogger.w(TAG, "Dispatch period cannot be greater or equal to session timeout.");
+                                dispatchPeriod = sessionTimeout - 1;
+                                CurioClientSettings.getInstance(context).setDispatchPeriod(dispatchPeriod);
+                                CurioLogger.i(TAG, "Periodic dispatch is ENABLED.");
+                                CurioLogger.i(TAG, "Dispatch period is " + dispatchPeriod + " minutes");
+                            }
                         }
                     }
-                }
 
-                if (Build.VERSION.SDK_INT >= Constants.GINGERBREAD_2_3_3_SDK_INT) {
-                    Info adInfo = null;
-                    try {
+                    if (Build.VERSION.SDK_INT >= Constants.GINGERBREAD_2_3_3_SDK_INT) {
+                        Info adInfo = null;
+                        try {
 
-                        CurioLogger.d(TAG, "Trying to get AdId...");
-                        adInfo = AdvertisingIdClient.getAdvertisingIdInfo(context);
-                        CurioLogger.d(TAG, "Fetched AdId is " + adInfo);
+                            CurioLogger.d(TAG, "Trying to get AdId...");
+                            adInfo = AdvertisingIdClient.getAdvertisingIdInfo(context);
+                            CurioLogger.d(TAG, "Fetched AdId is " + adInfo);
 
-                    } catch (IOException e) {
-                        // Unrecoverable error connecting to Google Play services.
-                        isAdIdAvailable = false;
-                    } catch (GooglePlayServicesNotAvailableException e) {
-                        // Google Play services is not available entirely.
-                        isAdIdAvailable = false;
-                    } catch (GooglePlayServicesRepairableException e) {
-                        // Google Play services recoverable exception.
-                        isAdIdAvailable = false;
-                        e.printStackTrace();
-                    } catch (IllegalStateException e) {
-                        // Ignore since we're not calling it on main thread.
-                    }
+                        } catch (IOException e) {
+                            // Unrecoverable error connecting to Google Play services.
+                            isAdIdAvailable = false;
+                        } catch (GooglePlayServicesNotAvailableException e) {
+                            // Google Play services is not available entirely.
+                            isAdIdAvailable = false;
+                        } catch (GooglePlayServicesRepairableException e) {
+                            // Google Play services recoverable exception.
+                            isAdIdAvailable = false;
+                            e.printStackTrace();
+                        } catch (IllegalStateException e) {
+                            // Ignore since we're not calling it on main thread.
+                        }
 
-                    if (isAdIdAvailable == null && adInfo != null) { // Not set, so we did not get an exception from big G. Play Services.
-                        isAdIdAvailable = !adInfo.isLimitAdTrackingEnabled(); // Check user prefs.
+                        if (isAdIdAvailable == null && adInfo != null) { // Not set, so we did not get an exception from big G. Play Services.
+                            isAdIdAvailable = !adInfo.isLimitAdTrackingEnabled(); // Check user prefs.
 
-                        if (isAdIdAvailable) {
-                            visitorCode = adInfo.getId();
-                        } else {
+                            if (isAdIdAvailable) {
+                                visitorCode = adInfo.getId();
+                            } else {
+                                visitorCode = VisitorCodeManager.id(trackingCode, context);
+                            }
+                        } else { // Not null and it's false, cannot use ad Id as visitor code.
+                            CurioLogger.d(TAG, "Ad Id is not available on device yet or cannot fetch Ad Id. So generating visitor code manually.");
                             visitorCode = VisitorCodeManager.id(trackingCode, context);
                         }
-                    } else { // Not null and it's false, cannot use ad Id as visitor code.
-                        CurioLogger.d(TAG, "Ad Id is not available on device yet or cannot fetch Ad Id. So generating visitor code manually.");
+                    } else {
+                        CurioLogger.d(TAG, "Ad Id is not available because of SDK level. So generating visitor code manually.");
                         visitorCode = VisitorCodeManager.id(trackingCode, context);
                     }
-                } else {
-                    CurioLogger.d(TAG, "Ad Id is not available because of SDK level. So generating visitor code manually.");
-                    visitorCode = VisitorCodeManager.id(trackingCode, context);
-                }
 
-                if (getParamsFromResource) {
-                    staticFeatureSet = new StaticFeatureSet(apiKey, trackingCode, visitorCode, sessionTimeout, gcmSenderId, autoPushRegistration);
-                } else {
-                    staticFeatureSet = new StaticFeatureSet(tmpApiKey, tmpTrackingCode, visitorCode, tmpSessionTimeout, tmpGcmSenderId, tmpAutoPushRegistration);
-                    CurioClientSettings.getInstance(context).setLoggingEnabled(tmpLoggingEnabled);
-                    CurioClientSettings.getInstance(context).setServerUrl(urlPrefix);
-                }
-                CurioLogger.d(TAG, "Static feature set created.");
-                setParamLoadingFinished(true);
+                    if (getParamsFromResource) {
+                        staticFeatureSet = new StaticFeatureSet(apiKey, trackingCode, visitorCode, sessionTimeout, gcmSenderId, autoPushRegistration);
+                    } else {
+                        staticFeatureSet = new StaticFeatureSet(tmpApiKey, tmpTrackingCode, visitorCode, tmpSessionTimeout, tmpGcmSenderId, tmpAutoPushRegistration);
+                        CurioClientSettings.getInstance(context).setLoggingEnabled(tmpLoggingEnabled);
+                        CurioClientSettings.getInstance(context).setServerUrl(urlPrefix);
+                    }
+                    CurioLogger.d(TAG, "Static feature set created.");
+                    setParamLoadingFinished(true);
 
-                CurioLogger.d(TAG, "Finished loading params and created static feature set on " + System.currentTimeMillis());
+                    CurioLogger.d(TAG, "Finished loading params and created static feature set on " + System.currentTimeMillis());
+                    CurioRequestProcessor.lock.lock();
+                    CurioRequestProcessor.paramsNotLoadedCondition.signal();
+                } finally {
+                    CurioRequestProcessor.lock.unlock();
+                }
             }
         }).start();
     }
@@ -323,9 +350,11 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 public void run() {
                     startSession(generate);
                 }
-            }, 100);
+            }, Constants.PARAM_LOAD_WAIT_START_SESSION);
             return;
         }
+
+        isSessionStartSent = true;
 
         // Create parameter map and add dynamic data values. Static data values will be added before sending request.
         Map<String, Object> params = new HashMap<String, Object>();
@@ -395,7 +424,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 public void run() {
                     startScreen(className, title, path);
                 }
-            }, 250);
+            }, Constants.PARAM_LOAD_WAIT_START_SCREEN);
             return;
         }
 
@@ -427,7 +456,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 @Override
                 public void handleResult(int statusCode, JSONObject result) {
                     if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                        if (unauthCount <= 5) {
+                        if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                             unauthCount++;
                             CurioLogger.d(TAG, "StartScreen - Try count: " + unauthCount);
                             /**
@@ -492,7 +521,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 public void run() {
                     endScreen(className);
                 }
-            }, 500);
+            }, Constants.PARAM_LOAD_WAIT_END_SCREEN);
             return;
         }
 
@@ -530,7 +559,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             @Override
             public void handleResult(int statusCode, JSONObject result) {
                 if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    if (unauthCount <= 5) {
+                    if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                         unauthCount++;
                         CurioLogger.d(TAG, "End Screen - Try count: " + unauthCount);
 
@@ -574,6 +603,12 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             if (!endingSession) {// First call so release stored periodic dispatch data.
                 curioRequestProcessor.releaseStoredRequests();
                 endingSession = true;
+                try {
+                    CurioRequestProcessor.lock.lock();
+                    CurioRequestProcessor.queueEmptyCondition.signal();
+                } finally {
+                    CurioRequestProcessor.lock.unlock();
+                }
                 return;
             } else {
                 // Clearing endingSession and release flags. This is important.
@@ -615,7 +650,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 public void run() {
                     sendEvent(key, value);
                 }
-            }, 500);
+            }, Constants.PARAM_LOAD_WAIT_SEND_EVENT);
             return;
         }
 
@@ -648,7 +683,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 @Override
                 public void handleResult(int statusCode, JSONObject result) {
                     if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                        if (unauthCount <= 5) {
+                        if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                             unauthCount++;
                             CurioLogger.d(TAG, "Send Event - Try count: " + unauthCount);
 
@@ -703,7 +738,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 public void run() {
                     endEvent(key, value, duration);
                 }
-            }, 500);
+            }, Constants.PARAM_LOAD_WAIT_END_EVENT);
             return;
         }
 
@@ -731,7 +766,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             @Override
             public void handleResult(int statusCode, JSONObject result) {
                 if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    if (unauthCount <= 5) {
+                    if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                         unauthCount++;
                         CurioLogger.d(TAG, "End Event - Try count: " + unauthCount);
 
@@ -897,7 +932,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             @Override
             public void handleResult(int statusCode, JSONObject result) {
                 if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    if (unauthCount <= 5) {
+                    if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                         unauthCount++;
                         CurioLogger.d(TAG, "SendRegistrationId - Try count: " + unauthCount);
                         /**
@@ -1063,7 +1098,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
                 @Override
                 public void handleResult(int statusCode, JSONObject result) {
                     if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                        if (unauthCount <= 5) {
+                        if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                             unauthCount++;
                             CurioLogger.d(TAG, "Unregister - Try count: " + unauthCount);
                             /**
@@ -1141,7 +1176,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             @Override
             public void handleResult(int statusCode, JSONObject result) {
                 if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    if (unauthCount <= 5) {
+                    if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                         unauthCount++;
                         CurioLogger.d(TAG, "sendUserTags - Try count: " + unauthCount);
                         /**
@@ -1203,7 +1238,7 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             @Override
             public void handleResult(int statusCode, JSONObject result) {
                 if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-                    if (unauthCount <= 5) {
+                    if (unauthCount <= Constants.MAX_UNAUTH_TRY_COUNT) {
                         unauthCount++;
                         CurioLogger.d(TAG, "getUserTags - Try count: " + unauthCount);
                         /**

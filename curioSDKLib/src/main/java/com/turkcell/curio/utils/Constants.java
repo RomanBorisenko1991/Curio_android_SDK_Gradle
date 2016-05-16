@@ -132,7 +132,7 @@ public class Constants {
 	public static final String CONNECTION_TYPE_STR_OTHER = "other";
 	public static final String THREAD_NAME_CURIO_REQ_PROC = "Curio Request Processor";
 	public static final String THREAD_NAME_DB_REQ_PROC = "DB Request Processor";
-	public static final int REQUEST_QUEUE_CAPACITY = 100;
+	public static final int REQUEST_QUEUE_CAPACITY = 200;
 	public static final int GINGERBREAD_2_3_3_SDK_INT = 10;
 
 	public static final int HONEYCOMB_SDK_INT = 11;
@@ -152,4 +152,21 @@ public class Constants {
 	public static final String BT_STATUS_ON = "on";
 	public static final String BT_STATUS_OFF = "off";
 	public static final String BT_STATUS_NO_PERMISSON = "no permission";
+
+	public static final int MAX_UNAUTH_TRY_COUNT = 5;
+	public static final long PARAM_LOAD_WAIT_START_SESSION = 100;
+	public static final long PARAM_LOAD_WAIT_START_SCREEN = 250;
+	public static final long PARAM_LOAD_WAIT_END_SCREEN = 500;
+	public static final long PARAM_LOAD_WAIT_SEND_EVENT = 500;
+	public static final long PARAM_LOAD_WAIT_END_EVENT = 500;
+
+	public static final int DB_QUEUE_TYPE_OFFLINE = 1;
+	public static final int DB_QUEUE_TYPE_PERIODIC = 2;
+
+	public static final int REQUEST_TYPE_START_SESSION = 0;
+	public static final int REQUEST_TYPE_END_SESSION = 1;
+	public static final int REQUEST_TYPE_SCREEN_START = 2;
+	public static final int REQUEST_TYPE_SCREEN_END = 3;
+	public static final int REQUEST_TYPE_SEND_EVENT = 4;
+	public static final int REQUEST_TYPE_END_EVENT = 7;
 }

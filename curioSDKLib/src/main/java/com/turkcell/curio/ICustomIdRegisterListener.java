@@ -24,5 +24,5 @@ package com.turkcell.curio;
  * @author Can Ciloglu
  */
 public interface ICustomIdRegisterListener {
-    public void onCustomIdRegisterResponse(boolean isSuccessful, int statusCode);
+    void onCustomIdRegisterResponse(boolean isSuccessful, int statusCode);
 }

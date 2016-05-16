@@ -27,7 +27,7 @@ import android.content.Context;
  */
 public class ParameterLoader {
 
-	private static final String TAG = "ParameterLoader";
+	private static final String TAG = ParameterLoader.class.getSimpleName();
 	private final Context context;
 
 	public ParameterLoader(Context ctx) {

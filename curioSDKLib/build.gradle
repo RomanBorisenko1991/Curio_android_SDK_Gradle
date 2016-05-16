@@ -9,7 +9,7 @@ android {
         minSdkVersion 10
         targetSdkVersion 23
         versionCode 1
-        versionName "1.1.4"
+        versionName "1.1.5"
     }
 
     buildTypes {
@@ -27,6 +27,7 @@ android {
 dependencies {
     compile 'com.google.android.gms:play-services-ads:+'
     compile 'com.google.android.gms:play-services-gcm:+'
+    testCompile 'junit:junit:4.12'
     compile files('libs/org.apache.http.legacy.jar')
 }
 

@@ -34,7 +34,7 @@ import android.content.Context;
 public class VisitorCodeManager {
   private static String sID = null;
   private static final String INSTALLATION = "INSTALLATION";
-private static final String TAG = "VisitorCodeManager";
+private static final String TAG = VisitorCodeManager.class.getSimpleName();
 
   public synchronized static String id(String trackingCode, Context context) {
       if (sID == null) {  

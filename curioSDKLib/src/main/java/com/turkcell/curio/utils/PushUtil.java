@@ -31,12 +31,11 @@ import com.turkcell.curio.CurioClient;
 
 /**
  * 
- * @changed Can Ciloglu
- * @author Ahmet Burak DEMIRKOPARAN
+ * @author Can Ciloglu
  */
 public class PushUtil {
 
-	private static String TAG = "GCMHelper";
+	private static String TAG = PushUtil.class.getSimpleName();
 
 	/**
 	 * Check the device to make sure it has the Google Play Services APK.

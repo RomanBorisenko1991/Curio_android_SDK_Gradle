@@ -17,6 +17,7 @@
  */
 package com.turkcell.curio.utils;
 
+import com.turkcell.curio.CurioRequestProcessor;
 import com.turkcell.curio.INetworkConnectivityChangeListener;
 
 import android.content.BroadcastReceiver;
@@ -36,7 +37,7 @@ public class NetworkUtil {
 
 	private static NetworkUtil instance;
 	private boolean isConnected;
-	private boolean previosConnectionState;
+	private boolean previousConnectionState;
 	private String connectionType;
 	private INetworkConnectivityChangeListener listener;
 
@@ -77,8 +78,8 @@ public class NetworkUtil {
 			public void onReceive(Context context, Intent intent) {
 				setConnectivityState(context);
 				
-				if(previosConnectionState != isConnected()){
-					previosConnectionState = isConnected();
+				if(previousConnectionState != isConnected()){
+					previousConnectionState = isConnected();
 					NetworkUtil.this.listener.networkConnectivityChanged(isConnected());
 				}
 			}
@@ -112,6 +113,15 @@ public class NetworkUtil {
 
 	private void setConnected(boolean isConnected) {
 		this.isConnected = isConnected;
+
+		if(isConnected){
+			try {
+				CurioRequestProcessor.lock.lock();
+				CurioRequestProcessor.queueEmptyCondition.signal();
+			} finally {
+				CurioRequestProcessor.lock.unlock();
+			}
+		}
 	}
 	
 	public boolean isConnected() {

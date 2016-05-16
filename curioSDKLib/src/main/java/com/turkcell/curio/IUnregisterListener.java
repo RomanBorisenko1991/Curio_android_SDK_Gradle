@@ -24,5 +24,5 @@ package com.turkcell.curio;
  * @author Can Ciloglu
  */
 public interface IUnregisterListener {
-    public void onUnregisterResponse(boolean isSuccessful, int statusCode);
+    void onUnregisterResponse(boolean isSuccessful, int statusCode);
 }

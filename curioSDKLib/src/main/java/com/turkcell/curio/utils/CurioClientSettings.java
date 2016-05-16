@@ -27,7 +27,7 @@ import android.content.Context;
  *
  */
 public class CurioClientSettings {
-	private static final String TAG = "CurioClientSettings";
+	private static final String TAG = CurioClientSettings.class.getSimpleName();
 	private static CurioClientSettings instance;
 	private String apiKey;
 	private int sessionTimeout;

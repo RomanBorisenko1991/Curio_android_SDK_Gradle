@@ -25,7 +25,7 @@ import java.util.Map;
  * @author Can Ciloglu
  */
 public interface IUserTagsResponseListener {
-    public void onSendUserTagsResponse(boolean isSuccessful, int statusCode);
+    void onSendUserTagsResponse(boolean isSuccessful, int statusCode);
 
-    public void onGetUserTagsResponse(Map<String, String> tagMap, int statusCode);
+    void onGetUserTagsResponse(Map<String, String> tagMap, int statusCode);
 }

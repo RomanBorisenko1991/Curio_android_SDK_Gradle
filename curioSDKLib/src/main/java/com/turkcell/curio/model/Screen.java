@@ -18,7 +18,7 @@
 package com.turkcell.curio.model;
 
 /**
- * Holder class for screen request structure.
+ * Model class for screen request structure.
  * 
  * @author Can Ciloglu
  *

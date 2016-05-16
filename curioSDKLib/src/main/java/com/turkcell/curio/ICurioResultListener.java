@@ -26,5 +26,5 @@ import org.json.JSONObject;
  *
  */
 public interface ICurioResultListener {
-  public void handleResult(int htppStatusCode, JSONObject result);
+  void handleResult(int htppStatusCode, JSONObject result);
 }

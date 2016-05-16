@@ -23,7 +23,7 @@ import com.turkcell.curio.utils.Constants;
 import com.turkcell.curio.utils.CurioUtil;
 
 /**
- * Holder class for offline request structure.
+ * Model class for offline request structure.
  * 
  * @author Can Ciloglu
  *

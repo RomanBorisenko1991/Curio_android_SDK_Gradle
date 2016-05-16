@@ -30,5 +30,5 @@ public interface INetworkConnectivityChangeListener {
 	 * 
 	 * @param isConnected
 	 */
-	public void networkConnectivityChanged(boolean isConnected);
+	void networkConnectivityChanged(boolean isConnected);
 }
