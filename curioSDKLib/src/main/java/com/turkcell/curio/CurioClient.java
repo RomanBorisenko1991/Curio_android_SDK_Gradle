@@ -1164,6 +1164,21 @@ public class CurioClient implements INetworkConnectivityChangeListener {
             return;
         }
 
+        /**
+         * If configuration param loading is not finished, post a delayed request again in 500 ms.
+         */
+        if (!isParamLoadingFinished()) {
+            CurioLogger.d(TAG, "sendUserTags called but config param loading is not finished yet, will try in 500 ms again.");
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    sendUserTags(userTagValueMap, userTagsResponseListener);
+                }
+            }, Constants.PARAM_LOAD_WAIT_END_EVENT);
+            return;
+        }
+
         this.userTagsResponseListener = userTagsResponseListener;
 
         Map<String, Object> params = new HashMap<String, Object>();
